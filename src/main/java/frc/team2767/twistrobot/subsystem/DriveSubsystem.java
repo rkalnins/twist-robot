@@ -21,8 +21,8 @@ public class DriveSubsystem extends Subsystem {
 
   private static final double DRIVE_SETPOINT_MAX = 10000.0;
   private static final int NUM_WHEELS = 4;
-  private static final double ROBOT_LENGTH = 1.0;
-  private static final double ROBOT_WIDTH = 1.0;
+  private static final double ROBOT_LENGTH = 21.5;
+  private static final double ROBOT_WIDTH = 21.5;
   private static final int PID = 0;
   private final Wheel[] wheels;
   private final SwerveDrive swerve = getSwerve();
@@ -64,24 +64,24 @@ public class DriveSubsystem extends Subsystem {
     return swerve.getGyro().getYaw();
   }
 
-  public int getDistance() {
-    double distance = 0;
-    for (int i = 0; i < NUM_WHEELS; i++) {
-      distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
-    }
-    distance /= 4;
-    return (int) distance;
-  }
+  //  public int getDistance() {
+  //    double distance = 0;
+  //    for (int i = 0; i < NUM_WHEELS; i++) {
+  //      distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
+  //    }
+  //    distance /= 4;
+  //    return (int) distance;
+  //  }
+  //
+  //  public void resetDistance() {
+  //    for (int i = 0; i < NUM_WHEELS; i++) {
+  //      start[i] = wheels[i].getDriveTalon().getSelectedSensorPosition(PID);
+  //    }
+  //  }
 
-  public void resetDistance() {
-    for (int i = 0; i < NUM_WHEELS; i++) {
-      start[i] = wheels[i].getDriveTalon().getSelectedSensorPosition(PID);
-    }
-  }
-
-  public void stop() {
-    drive(0.0, 0.0, 0.0);
-  }
+  //  public void stop() {
+  //    drive(0.0, 0.0, 0.0);
+  //  }
 
   // Swerve configuration
 
@@ -100,17 +100,6 @@ public class DriveSubsystem extends Subsystem {
   private Wheel[] getWheels() {
     TalonSRXConfiguration azimuthConfig = new TalonSRXConfiguration();
     azimuthConfig.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;
-    azimuthConfig.continuousCurrentLimit = 10;
-    azimuthConfig.peakCurrentDuration = 0;
-    azimuthConfig.peakCurrentLimit = 0;
-    azimuthConfig.slot0.kP = 0.04;
-    azimuthConfig.slot0.kI = 0.0004;
-    azimuthConfig.slot0.kD = 2;
-    azimuthConfig.slot0.kF = 0.04;
-    azimuthConfig.slot0.integralZone = 1_500;
-    azimuthConfig.slot0.allowableClosedloopError = 300_000;
-    azimuthConfig.motionAcceleration = 10_000;
-    azimuthConfig.motionCruiseVelocity = 800;
 
     TalonSRXConfiguration driveConfig = new TalonSRXConfiguration();
     driveConfig.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;
@@ -123,6 +112,18 @@ public class DriveSubsystem extends Subsystem {
     driveConfig.slot0.kF = 0.028;
     driveConfig.slot0.integralZone = 3_000;
     driveConfig.slot0.allowableClosedloopError = 200_000;
+
+    azimuthConfig.continuousCurrentLimit = 10;
+    azimuthConfig.peakCurrentDuration = 0;
+    azimuthConfig.peakCurrentLimit = 0;
+    azimuthConfig.slot0.kP = 10.0;
+    azimuthConfig.slot0.kI = 0.0;
+    azimuthConfig.slot0.kD = 100.0;
+    azimuthConfig.slot0.kF = 0.0;
+    azimuthConfig.slot0.integralZone = 0;
+    azimuthConfig.slot0.allowableClosedloopError = 0;
+    azimuthConfig.motionAcceleration = 10_000;
+    azimuthConfig.motionCruiseVelocity = 800;
 
     TelemetryService telemetryService = Robot.TELEMETRY;
     telemetryService.stop();
