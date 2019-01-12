@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.command.Subsystem;
 import frc.team2767.twistrobot.Robot;
 import frc.team2767.twistrobot.command.TeleOpDriveCommand;
+import frc.team2767.twistrobot.motion.MotionController;
+import frc.team2767.twistrobot.motion.YawController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.thirdcoast.swerve.SwerveDrive;
@@ -30,6 +32,8 @@ public class DriveSubsystem extends Subsystem {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private int[] start = new int[4];
   private double distanceTarget;
+  private YawController yawController;
+  private MotionController motionController;
 
   public DriveSubsystem() {
     logger.info("drive subsystem initialized");
@@ -39,11 +43,6 @@ public class DriveSubsystem extends Subsystem {
   @Override
   protected void initDefaultCommand() {
     setDefaultCommand(new TeleOpDriveCommand());
-  }
-
-  public void setDriveMode(DriveMode mode) {
-    logger.debug("setting drive mode to {}", mode);
-    swerve.setDriveMode(mode);
   }
 
   public void zeroAzimuthEncoders() {
@@ -63,6 +62,8 @@ public class DriveSubsystem extends Subsystem {
   }
 
   public void resetDistance() {
+
+    logger.debug("reset wheel encoder");
     for (int i = 0; i < NUM_WHEELS; i++) {
       start[i] = wheels[i].getDriveTalon().getSelectedSensorPosition(PID);
     }
@@ -77,6 +78,8 @@ public class DriveSubsystem extends Subsystem {
   }
 
   public void setDistanceTarget(int distanceTarget) {
+
+    logger.debug("distance target = {}", distanceTarget);
     this.distanceTarget = distanceTarget;
   }
 
@@ -90,7 +93,31 @@ public class DriveSubsystem extends Subsystem {
       distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
     }
     distance /= 4;
+    logger.debug("distance = {}", (int) distance);
     return (int) distance;
+  }
+
+  public AHRS getGyro() {
+    return swerve.getGyro();
+  }
+
+  public void setDriveMode(DriveMode mode) {
+    logger.debug("setting drive mode to {}", mode);
+    swerve.setDriveMode(mode);
+  }
+
+  public void motionTo(double direction, int distance, double yaw) {
+    motionController = new MotionController(direction, distance, yaw);
+    motionController.start();
+  }
+
+  public boolean isMotionFinished() {
+    return motionController.isFinished();
+  }
+
+  public void endMotion() {
+    motionController.stop();
+    motionController = null;
   }
 
   // Swerve configuration
@@ -157,6 +184,10 @@ public class DriveSubsystem extends Subsystem {
       wheels[i] = wheel;
     }
 
+    return wheels;
+  }
+
+  public Wheel[] getAllWheels() {
     return wheels;
   }
 }
