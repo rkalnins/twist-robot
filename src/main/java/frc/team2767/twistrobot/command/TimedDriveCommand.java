@@ -5,6 +5,7 @@ import frc.team2767.twistrobot.Robot;
 import frc.team2767.twistrobot.subsystem.DriveSubsystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.strykeforce.thirdcoast.swerve.SwerveDrive;
 
 public class TimedDriveCommand extends TimedCommand {
 
@@ -26,6 +27,7 @@ public class TimedDriveCommand extends TimedCommand {
 
   @Override
   protected void initialize() {
+    drive.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
     logger.debug("timed drive init");
     drive.drive(forward, strafe, yaw);
     logger.debug("forward = {}, strafe = {}, azimuth = {}", forward, strafe, yaw);
