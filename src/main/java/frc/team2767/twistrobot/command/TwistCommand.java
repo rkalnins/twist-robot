@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 public class TwistCommand extends Command {
   private static final DriveSubsystem drive = Robot.DRIVE;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
-  private final int TICKS_PER_INCH = 4096;
   private double cameraAngle;
   private double cameraRange;
 
@@ -31,7 +30,7 @@ public class TwistCommand extends Command {
   }
 
   private int computeAverageTickCount() {
-    int ticks = (int) cameraRange / TICKS_PER_INCH;
+    int ticks = (int) cameraRange / drive.TICKS_PER_INCH;
     logger.debug("ticks={}", ticks);
 
     return 0;

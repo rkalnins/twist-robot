@@ -19,15 +19,17 @@ import org.strykeforce.thirdcoast.telemetry.TelemetryService;
 
 public class DriveSubsystem extends Subsystem {
 
-  private static final double DRIVE_SETPOINT_MAX = 10000.0;
+  private static final double DRIVE_SETPOINT_MAX = 60_000.0;
   private static final int NUM_WHEELS = 4;
   private static final double ROBOT_LENGTH = 21.5;
   private static final double ROBOT_WIDTH = 21.5;
   private static final int PID = 0;
+  public final int TICKS_PER_INCH = 4096;
   private final Wheel[] wheels;
   private final SwerveDrive swerve = getSwerve();
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private int[] start = new int[4];
+  private double distanceTarget;
 
   public DriveSubsystem() {
     logger.info("drive subsystem initialized");
@@ -60,15 +62,6 @@ public class DriveSubsystem extends Subsystem {
     return swerve.getGyro().getYaw();
   }
 
-  public int getDistance() {
-    double distance = 0;
-    for (int i = 0; i < NUM_WHEELS; i++) {
-      distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
-    }
-    distance /= 4;
-    return (int) distance;
-  }
-
   public void resetDistance() {
     for (int i = 0; i < NUM_WHEELS; i++) {
       start[i] = wheels[i].getDriveTalon().getSelectedSensorPosition(PID);
@@ -81,6 +74,23 @@ public class DriveSubsystem extends Subsystem {
 
   public void drive(double forward, double strafe, double azimuth) {
     swerve.drive(forward, strafe, azimuth);
+  }
+
+  public void setDistanceTarget(int distanceTarget) {
+    this.distanceTarget = distanceTarget;
+  }
+
+  public boolean isDistanceTargetFinished() {
+    return getDistance() >= distanceTarget;
+  }
+
+  public int getDistance() {
+    double distance = 0;
+    for (int i = 0; i < NUM_WHEELS; i++) {
+      distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
+    }
+    distance /= 4;
+    return (int) distance;
   }
 
   // Swerve configuration

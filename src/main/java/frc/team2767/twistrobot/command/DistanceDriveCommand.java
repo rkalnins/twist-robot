@@ -11,12 +11,12 @@ public class DistanceDriveCommand extends Command {
 
   private static final DriveSubsystem drive = Robot.DRIVE;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
-  private final double distanceSetpoint;
+  private final int distanceSetpoint;
   private final double forward;
   private final double strafe;
   private final double yaw;
 
-  public DistanceDriveCommand(double distanceSetpoint, double forward, double strafe, double yaw) {
+  public DistanceDriveCommand(int distanceSetpoint, double forward, double strafe, double yaw) {
     this.distanceSetpoint = distanceSetpoint;
     this.forward = forward;
     this.strafe = strafe;
@@ -27,22 +27,24 @@ public class DistanceDriveCommand extends Command {
 
   @Override
   protected void initialize() {
-    drive.resetDistance();
     drive.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
-  }
+    drive.resetDistance();
+    drive.setDistanceTarget(distanceSetpoint);
+    logger.debug("distance = {}", drive.getDistance());
+    logger.debug("setpoint = {}", distanceSetpoint);
 
-  @Override
-  protected void execute() {
+    logger.debug("f={}", forward);
     drive.drive(forward, strafe, yaw);
   }
 
   @Override
   protected boolean isFinished() {
-    return drive.getDistance() >= distanceSetpoint;
+    return drive.isDistanceTargetFinished();
   }
 
   @Override
   protected void end() {
+    logger.debug("ticks traveled: {}", drive.getDistance());
     drive.stop();
   }
 }
