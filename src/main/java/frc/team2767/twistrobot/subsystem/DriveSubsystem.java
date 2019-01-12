@@ -48,10 +48,6 @@ public class DriveSubsystem extends Subsystem {
     swerve.zeroAzimuthEncoders();
   }
 
-  public void drive(double forward, double strafe, double azimuth) {
-    swerve.drive(forward, strafe, azimuth);
-  }
-
   public void zeroGyro() {
     AHRS gyro = swerve.getGyro();
     gyro.setAngleAdjustment(0);
@@ -64,24 +60,28 @@ public class DriveSubsystem extends Subsystem {
     return swerve.getGyro().getYaw();
   }
 
-  //  public int getDistance() {
-  //    double distance = 0;
-  //    for (int i = 0; i < NUM_WHEELS; i++) {
-  //      distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
-  //    }
-  //    distance /= 4;
-  //    return (int) distance;
-  //  }
-  //
-  //  public void resetDistance() {
-  //    for (int i = 0; i < NUM_WHEELS; i++) {
-  //      start[i] = wheels[i].getDriveTalon().getSelectedSensorPosition(PID);
-  //    }
-  //  }
+  public int getDistance() {
+    double distance = 0;
+    for (int i = 0; i < NUM_WHEELS; i++) {
+      distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
+    }
+    distance /= 4;
+    return (int) distance;
+  }
 
-  //  public void stop() {
-  //    drive(0.0, 0.0, 0.0);
-  //  }
+  public void resetDistance() {
+    for (int i = 0; i < NUM_WHEELS; i++) {
+      start[i] = wheels[i].getDriveTalon().getSelectedSensorPosition(PID);
+    }
+  }
+
+  public void stop() {
+    swerve.stop();
+  }
+
+  public void drive(double forward, double strafe, double azimuth) {
+    swerve.drive(forward, strafe, azimuth);
+  }
 
   // Swerve configuration
 
@@ -112,6 +112,8 @@ public class DriveSubsystem extends Subsystem {
     driveConfig.slot0.kF = 0.028;
     driveConfig.slot0.integralZone = 3_000;
     driveConfig.slot0.allowableClosedloopError = 200_000;
+    driveConfig.motionAcceleration = 10_000;
+    driveConfig.motionAcceleration = 800;
 
     azimuthConfig.continuousCurrentLimit = 10;
     azimuthConfig.peakCurrentDuration = 0;
