@@ -2,6 +2,7 @@ package frc.team2767.twistrobot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.command.Scheduler;
+import frc.team2767.twistrobot.command.ZeroGyroCommand;
 import frc.team2767.twistrobot.control.Controls;
 import frc.team2767.twistrobot.subsystem.DriveSubsystem;
 import java.util.Date;
@@ -26,8 +27,12 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     logger.info("Today is {}", new Date());
     DRIVE.zeroAzimuthEncoders();
-
     TELEMETRY.start();
+  }
+
+  @Override
+  public void teleopInit() {
+    new ZeroGyroCommand();
   }
 
   @Override

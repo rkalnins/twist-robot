@@ -57,10 +57,6 @@ public class DriveSubsystem extends Subsystem {
     logger.info("resetting gyro zero ({})", adj);
   }
 
-  public double getGyroYaw() {
-    return swerve.getGyro().getYaw();
-  }
-
   public void resetDistance() {
 
     logger.debug("reset wheel encoder");
@@ -148,7 +144,7 @@ public class DriveSubsystem extends Subsystem {
     driveConfig.slot0.kD = 0.0;
     driveConfig.slot0.kF = 0.028;
     driveConfig.slot0.integralZone = 3_000;
-    driveConfig.slot0.allowableClosedloopError = 200_000;
+    driveConfig.slot0.allowableClosedloopError = 0;
     driveConfig.motionAcceleration = 10_000;
     driveConfig.motionAcceleration = 800;
 

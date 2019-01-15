@@ -64,4 +64,20 @@ public class MotionProfile {
     prev_pos = curr_pos;
     iteration++;
   }
+
+  public int getIteration() {
+    return iteration;
+  }
+
+  public double getCurrentVelocity() {
+    return curr_vel;
+  }
+
+  public double getCurrentPosition() {
+    return curr_pos;
+  }
+
+  public double getCurrentAcceleration() {
+    return curr_acc;
+  }
 }

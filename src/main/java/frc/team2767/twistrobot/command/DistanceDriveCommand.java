@@ -14,6 +14,7 @@ public class DistanceDriveCommand extends Command {
 
   public DistanceDriveCommand(int distanceSetpoint) {
     this.distanceSetpoint = distanceSetpoint;
+    setTimeout(12.0);
     requires(drive);
   }
 
@@ -25,7 +26,7 @@ public class DistanceDriveCommand extends Command {
 
   @Override
   protected boolean isFinished() {
-    return drive.isMotionFinished();
+    return drive.isMotionFinished() || isTimedOut();
   }
 
   @Override
