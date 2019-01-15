@@ -162,7 +162,7 @@ public class MotionController {
 
   public void stop() {
     logger.info("FINISH motion");
-    drive.drive(0, 0, 0);
+    drive.stop();
     notifier.stop();
     pidController.disable();
 

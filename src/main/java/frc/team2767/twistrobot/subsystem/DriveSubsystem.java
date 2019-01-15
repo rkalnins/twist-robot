@@ -75,16 +75,6 @@ public class DriveSubsystem extends Subsystem {
     swerve.drive(forward, strafe, azimuth);
   }
 
-  public void setDistanceTarget(int distanceTarget) {
-
-    logger.debug("distance target = {}", distanceTarget);
-    this.distanceTarget = distanceTarget;
-  }
-
-  public boolean isDistanceTargetFinished() {
-    return getDistance() >= distanceTarget;
-  }
-
   public int getDistance() {
     double distance = 0;
     for (int i = 0; i < NUM_WHEELS; i++) {

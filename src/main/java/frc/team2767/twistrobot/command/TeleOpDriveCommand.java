@@ -43,7 +43,7 @@ public final class TeleOpDriveCommand extends Command {
 
   @Override
   protected void end() {
-    drive.drive(0.0, 0.0, 0.0);
+    drive.stop();
   }
 
   private double deadband(double value) {
