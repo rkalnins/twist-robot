@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.thirdcoast.telemetry.TelemetryController;
 import org.strykeforce.thirdcoast.telemetry.TelemetryService;
+import org.strykeforce.thirdcoast.trapper.Session;
 
 public class Robot extends TimedRobot {
   // Instantiate this before Subsystems because they use telemetry service.
@@ -26,6 +27,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     logger.info("Today is {}", new Date());
+    Session.INSTANCE.setBaseUrl("https://keeper.strykeforce.org");
     DRIVE.zeroAzimuthEncoders();
     TELEMETRY.start();
   }

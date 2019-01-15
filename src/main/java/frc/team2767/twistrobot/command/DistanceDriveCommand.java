@@ -20,6 +20,8 @@ public class DistanceDriveCommand extends Command {
 
   @Override
   protected void initialize() {
+    drive.resetGyroYaw();
+    drive.zeroGyro();
     drive.resetDistance();
     drive.motionTo(0.0, distanceSetpoint, 0.0);
   }

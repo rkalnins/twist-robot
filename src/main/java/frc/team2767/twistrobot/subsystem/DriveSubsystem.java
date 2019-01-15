@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj.command.Subsystem;
 import frc.team2767.twistrobot.Robot;
 import frc.team2767.twistrobot.command.TeleOpDriveCommand;
 import frc.team2767.twistrobot.motion.MotionController;
-import frc.team2767.twistrobot.motion.YawController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.thirdcoast.swerve.SwerveDrive;
@@ -32,7 +31,6 @@ public class DriveSubsystem extends Subsystem {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private int[] start = new int[4];
   private double distanceTarget;
-  private YawController yawController;
   private MotionController motionController;
 
   public DriveSubsystem() {
@@ -55,6 +53,10 @@ public class DriveSubsystem extends Subsystem {
     double adj = gyro.getAngle() % 360;
     gyro.setAngleAdjustment(-adj);
     logger.info("resetting gyro zero ({})", adj);
+  }
+
+  public void resetGyroYaw() {
+    swerve.getGyro().zeroYaw();
   }
 
   public void resetDistance() {
@@ -137,8 +139,8 @@ public class DriveSubsystem extends Subsystem {
     TalonSRXConfiguration driveConfig = new TalonSRXConfiguration();
     driveConfig.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;
     driveConfig.continuousCurrentLimit = 40;
-    driveConfig.peakCurrentDuration = 0;
-    driveConfig.peakCurrentLimit = 0;
+    driveConfig.peakCurrentDuration = 40;
+    driveConfig.peakCurrentLimit = 1;
     driveConfig.slot0.kP = 0.03;
     driveConfig.slot0.kI = 0.0003;
     driveConfig.slot0.kD = 0.0;

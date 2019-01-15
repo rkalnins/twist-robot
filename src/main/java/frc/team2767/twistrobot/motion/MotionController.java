@@ -14,17 +14,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.thirdcoast.swerve.SwerveDrive;
 import org.strykeforce.thirdcoast.trapper.Action;
-import org.strykeforce.thirdcoast.trapper.Session;
 import org.strykeforce.thirdcoast.trapper.SessionKt;
 
 public class MotionController {
   private static final int DT_MS = 20;
   private static final int T1_MS = 200;
   private static final int T2_MS = 100;
-  private static final double V_PROG = 5_000 * 10; // ticks/sec
+  private static final double V_PROG = 15_000 * 10; // ticks/sec
 
   private static final double K_P = 0.01;
-  private static final double OUTPUT_RANGE = 0.25;
+  private static final double OUTPUT_RANGE = 0.5;
   private static final double GOOD_ENOUGH = 5_500;
   private static final double ABS_TOL = 1.0;
   private static final DriveSubsystem drive = Robot.DRIVE;
@@ -51,10 +50,13 @@ public class MotionController {
     pidController.setOutputRange(-OUTPUT_RANGE, OUTPUT_RANGE);
     pidController.setContinuous(true);
     pidController.setAbsoluteTolerance(ABS_TOL);
-
+    logger.debug("PIDController created");
     notifier = new Notifier(this::updateDrive);
+    logger.debug("Notifier created");
 
     List<String> measures = List.of("profile_ticks", "actual_ticks", "actual_distance");
+    logger.debug("created measures");
+
     List<String> traceMeasures =
         List.of(
             "profile_acc",
@@ -67,6 +69,8 @@ public class MotionController {
             "strafe",
             "yaw",
             "gyro_angle");
+
+    logger.debug("created trace measures meta");
 
     Map<String, Object> meta =
         new HashMap<>(
@@ -92,6 +96,8 @@ public class MotionController {
                 "good_enough",
                 GOOD_ENOUGH));
 
+    logger.debug("created meta");
+
     meta.put("profile_ticks", distance); // Map.of takes 10 max
 
     List<List<Double>> traceData = new ArrayList<>();
@@ -106,7 +112,8 @@ public class MotionController {
             traceMeasures,
             traceData);
 
-    Session.INSTANCE.setBaseUrl("https://keeper.strykeforce.org");
+    logger.debug("action created");
+    logger.debug("completed keeper action logger setup");
   }
 
   private synchronized void updateYaw(double yaw) {
