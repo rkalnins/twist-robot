@@ -1,5 +1,7 @@
 package frc.team2767.twistrobot.motion;
 
+import static java.util.Collections.emptyList;
+
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PIDController;
 import frc.team2767.twistrobot.Robot;
@@ -75,11 +77,11 @@ public class MotionController {
                 T1_MS,
                 "t2",
                 T2_MS,
-                "vProg",
+                "v_prog",
                 (int) V_PROG,
                 "direction",
                 direction,
-                "azimuth",
+                "yaw",
                 yaw,
                 "tags",
                 List.of("skippy", "rkalnins", "twist"),
@@ -90,14 +92,19 @@ public class MotionController {
                 "good_enough",
                 GOOD_ENOUGH));
 
-    List<List<Double>> traceData = new ArrayList<>();
-    List<Double> data = new ArrayList<>();
+    meta.put("profile_ticks", distance); // Map.of takes 10 max
 
-    data.add((double) distance); // profile_ticks
+    List<List<Double>> traceData = new ArrayList<>();
 
     action =
         new Action(
-            null, "Skippy motion profile (twist)", meta, measures, data, traceMeasures, traceData);
+            null,
+            "Skippy motion profile (twist)",
+            meta,
+            emptyList(),
+            emptyList(),
+            traceMeasures,
+            traceData);
 
     Session.INSTANCE.setBaseUrl("https://keeper.strykeforce.org");
   }
@@ -143,7 +150,7 @@ public class MotionController {
     logger.info("START motion gyro angle = {}", drive.getGyro().getAngle());
     notifier.startPeriodic(DT_MS / 1000.0);
     pidController.enable();
-    action.getMeta().put("gyroStart", drive.getGyro().getAngle());
+    action.getMeta().put("gyro_start", drive.getGyro().getAngle());
   }
 
   public void stop() {
@@ -152,8 +159,8 @@ public class MotionController {
     notifier.stop();
     pidController.disable();
 
-    action.getMeta().put("gyroEnd", drive.getGyro().getAngle());
-    action.getData().add((double) drive.getDistance());
+    action.getMeta().put("actual_ticks", drive.getDistance());
+    action.getMeta().put("gyro_end", drive.getGyro().getAngle());
     SessionKt.post(action);
   }
 
