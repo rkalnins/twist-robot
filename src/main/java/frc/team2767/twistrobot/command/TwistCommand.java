@@ -17,7 +17,7 @@ public class TwistCommand extends Command {
     this.distanceSetpoint = distance;
     this.heading = heading;
     this.yawSetpoint = endYaw;
-    setTimeout(12.0);
+    setTimeout(10.0);
     requires(drive);
   }
 
@@ -37,6 +37,6 @@ public class TwistCommand extends Command {
   @Override
   protected void end() {
     drive.endMotion();
-    logger.info("MotionDrive distanceSetpoint = {}", drive.getDistance());
+    logger.info("Twist command end distanceSetpoint = {}", drive.getDistance());
   }
 }

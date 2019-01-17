@@ -22,40 +22,48 @@ public class MotionController {
   private static final int T2_MS = 100;
   private static final double V_PROG = 15_000 * 10; // ticks/sec
 
-  private static final double K_P = 0.01;
+  private static final double K_P_DRIVE = 1.2;
+  private static final double K_SCALE_YAW_CORRECTION = 4.0;
+  private static final double K_P_YAW = 0.01;
+  private static final double K_D_YAW = 0.1;
   private static final double OUTPUT_RANGE = 0.5;
   private static final double GOOD_ENOUGH = 5_500;
   private static final double ABS_TOL = 1.0;
   private static final DriveSubsystem drive = Robot.DRIVE;
+  private static double driveError;
+  private static double yawError;
   private final double forwardComponent;
   private final double strafeComponent;
-  private final PIDController pidController;
+  private final PIDController yawController;
   private final MotionProfile motionProfile;
   private final Notifier notifier;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private double yaw;
   private Action action;
 
-  public MotionController(double direction, int distance, double yaw) {
+  private double previousAngle;
+  private int distanceSetpoint;
+
+  public MotionController(double direction, int distanceSetpoint, double yaw) {
+    this.distanceSetpoint = distanceSetpoint;
     drive.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
-    motionProfile = new MotionProfile(DT_MS, T1_MS, T2_MS, V_PROG, distance);
+    motionProfile = new MotionProfile(DT_MS, T1_MS, T2_MS, V_PROG, distanceSetpoint);
 
     double ticksPerSecMax = drive.getAllWheels()[0].getDriveSetpointMax() * 10.0;
     forwardComponent = Math.cos(Math.toRadians(direction)) / ticksPerSecMax;
     strafeComponent = Math.sin(Math.toRadians(direction)) / ticksPerSecMax;
+    previousAngle = drive.getGyro().getAngle();
 
-    pidController = new PIDController(K_P, 0, 0, drive.getGyro(), this::updateYaw, 0.01);
-    pidController.setSetpoint(yaw);
-    pidController.setInputRange(-180d, 180d);
-    pidController.setOutputRange(-OUTPUT_RANGE, OUTPUT_RANGE);
-    pidController.setContinuous(true);
-    pidController.setAbsoluteTolerance(ABS_TOL);
-    logger.debug("PIDController created");
+    // yaw control
+    yawController = new PIDController(K_P_YAW, 0, K_D_YAW, drive.getGyro(), this::updateYaw, 0.01);
+    yawController.setSetpoint(yaw);
+    yawController.setInputRange(-180d, 180d);
+    yawController.setOutputRange(-OUTPUT_RANGE, OUTPUT_RANGE);
+    yawController.setContinuous(true);
+    yawController.setAbsoluteTolerance(ABS_TOL);
     notifier = new Notifier(this::updateDrive);
-    logger.debug("Notifier created");
 
-    List<String> measures = List.of("profile_ticks", "actual_ticks", "actual_distance");
-    logger.debug("created measures");
+    driveError = 0.0;
 
     List<String> traceMeasures =
         List.of(
@@ -92,13 +100,13 @@ public class MotionController {
                 "type",
                 "motion_profile",
                 "k_p",
-                K_P,
+                K_P_DRIVE,
                 "good_enough",
                 GOOD_ENOUGH));
 
     logger.debug("created meta");
 
-    meta.put("profile_ticks", distance); // Map.of takes 10 max
+    meta.put("profile_ticks", distanceSetpoint); // Map.of takes 10 max
 
     List<List<Double>> traceData = new ArrayList<>();
 
@@ -117,16 +125,24 @@ public class MotionController {
   }
 
   private synchronized void updateYaw(double yaw) {
-    this.yaw = pidController.onTarget() ? 0 : yaw;
+    this.yaw = yawController.onTarget() ? 0 : yaw;
   }
 
   private void updateDrive() {
     motionProfile.calculate();
+    yawError = calculateDriveError();
+    double currentDistance = drive.getDistance();
+    driveError = motionProfile.getCurrentPosition() - currentDistance;
+
     // velocity with k_p term
+    double setpointVelocity =
+        motionProfile.getCurrentVelocity()
+            + (driveError + yawError * K_SCALE_YAW_CORRECTION) * K_P_DRIVE;
+
     double forward, strafe, yaw;
     synchronized (this) {
-      forward = forwardComponent * motionProfile.getCurrentVelocity();
-      strafe = strafeComponent * motionProfile.getCurrentVelocity();
+      forward = forwardComponent * setpointVelocity;
+      strafe = strafeComponent * setpointVelocity;
       yaw = this.yaw;
     }
     drive.drive(forward, strafe, yaw);
@@ -138,25 +154,33 @@ public class MotionController {
                 (double) (motionProfile.getIteration() * DT_MS), // millis
                 motionProfile.getCurrentAcceleration(), // profile_acc
                 motionProfile.getCurrentVelocity(), // profile_vel
-                motionProfile.getCurrentVelocity(), // setpoint_vel
+                setpointVelocity, // setpoint_vel
                 (double)
                     drive
                         .getAllWheels()[0]
                         .getDriveTalon()
                         .getSelectedSensorVelocity(), // actual_vel
                 motionProfile.getCurrentPosition(), // profile_ticks
-                (double) drive.getDistance(), // actual_ticks
+                currentDistance, // actual_ticks
                 forward, // forward
                 strafe, // strafe
                 yaw, // yaw
                 drive.getGyro().getAngle()));
   }
 
+  private int calculateDriveError() {
+    double currentAngle = drive.getGyro().getAngle();
+    double angleDifference = Math.abs(previousAngle - currentAngle);
+    int ticksToAdd = (int) angleDifference * drive.TICKS_PER_DEGREE;
+    previousAngle = drive.getGyro().getAngle();
+    return ticksToAdd;
+  }
+
   public void start() {
     drive.zeroGyro();
     logger.info("START motion gyro angle = {}", drive.getGyro().getAngle());
     notifier.startPeriodic(DT_MS / 1000.0);
-    pidController.enable();
+    yawController.enable();
     action.getMeta().put("gyro_start", drive.getGyro().getAngle());
   }
 
@@ -164,7 +188,7 @@ public class MotionController {
     logger.info("FINISH motion");
     drive.stop();
     notifier.stop();
-    pidController.disable();
+    yawController.disable();
 
     action.getMeta().put("actual_ticks", drive.getDistance());
     action.getMeta().put("gyro_end", drive.getGyro().getAngle());
@@ -172,6 +196,6 @@ public class MotionController {
   }
 
   public boolean isFinished() {
-    return motionProfile.isFinished() && pidController.onTarget();
+    return motionProfile.isFinished() && yawController.onTarget();
   }
 }

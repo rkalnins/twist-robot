@@ -27,15 +27,23 @@ public class DriveSubsystem extends Subsystem {
   private static final double ROBOT_LENGTH = 21.5;
   private static final double ROBOT_WIDTH = 21.5;
   private static final int PID = 0;
-  public final int TICKS_PER_INCH = 4096;
+  public final int TICKS_PER_INCH = 2100;
+  public final int TICKS_PER_DEGREE;
   private final Wheel[] wheels;
   private final SwerveDrive swerve = getSwerve();
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private int[] start = new int[4];
-  private double distanceTarget;
   private MotionController motionController;
 
   public DriveSubsystem() {
+    TICKS_PER_DEGREE =
+        (int)
+            ((2
+                * Math.PI
+                * Math.sqrt(Math.pow(ROBOT_LENGTH / 2, 2) + Math.pow(ROBOT_WIDTH / 2, 2))
+                * TICKS_PER_INCH
+                / 360)); // WATCH: when center of rotation changes, this will be wrong
+    logger.debug("Ticks per degree: {}", TICKS_PER_DEGREE);
     logger.info("drive subsystem initialized");
     wheels = swerve.getWheels();
   }
@@ -83,7 +91,7 @@ public class DriveSubsystem extends Subsystem {
       distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
     }
     distance /= 4;
-    logger.debug("distance = {}", (int) distance);
+    //    logger.debug("distance = {}", (int) distance);
     return (int) distance;
   }
 

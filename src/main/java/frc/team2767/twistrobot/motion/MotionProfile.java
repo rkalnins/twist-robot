@@ -23,22 +23,22 @@ public class MotionProfile {
   private final double v_prog;
   private final int[] f1;
   private final double[] f2;
-  private final int n;
   double curr_vel;
   double curr_pos;
   double curr_acc;
+  private int n;
   private int iteration;
   private double prev_vel;
   private double prev_pos;
+  private double t4;
 
   public MotionProfile(int dt, int t1, int t2, double v_prog, double dist) {
     this.dt = dt;
     this.v_prog = v_prog;
     f1 = new int[(int) Math.ceil((double) t1 / dt)];
     f2 = new double[(int) Math.ceil((double) t2 / dt)];
-
-    double t4 = dist / v_prog * 1000;
-    n = (int) Math.ceil(t4 / dt);
+    t4 = (dist) / v_prog * 1000;
+    n = (int) Math.ceil((t4 / dt));
 
     logger.debug("t4 = {}", t4);
     logger.debug("n = {}", n);
