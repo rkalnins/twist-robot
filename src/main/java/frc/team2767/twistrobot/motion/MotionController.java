@@ -23,15 +23,14 @@ public class MotionController {
   private static final double V_PROG = 15_000 * 10; // ticks/sec
 
   private static final double K_P_DRIVE = 1.6;
-  private static final double K_SCALE_YAW_CORRECTION = 4.0;
+  private static final double K_P_YAW_CORRECTION = 30.0;
   private static final double K_P_YAW = 0.01;
   private static final double K_D_YAW = 0.1;
   private static final double OUTPUT_RANGE = 0.5;
   private static final double GOOD_ENOUGH = 5_500;
   private static final double ABS_TOL = 1.0;
   private static final DriveSubsystem drive = Robot.DRIVE;
-  private static double driveError;
-  private static double yawError;
+  private static double driveDistanceError;
   private final double forwardComponent;
   private final double strafeComponent;
   private final PIDController yawController;
@@ -39,13 +38,10 @@ public class MotionController {
   private final Notifier notifier;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private double yaw;
+  private double previousAngle;
   private Action action;
 
-  private double previousAngle;
-  private int distanceSetpoint;
-
   public MotionController(double direction, int distanceSetpoint, double yaw) {
-    this.distanceSetpoint = distanceSetpoint;
     drive.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
     motionProfile = new MotionProfile(DT_MS, T1_MS, T2_MS, V_PROG, distanceSetpoint);
 
@@ -63,7 +59,7 @@ public class MotionController {
     yawController.setAbsoluteTolerance(ABS_TOL);
     notifier = new Notifier(this::updateDrive);
 
-    driveError = 0.0;
+    driveDistanceError = 0.0;
 
     List<String> traceMeasures =
         List.of(
@@ -130,14 +126,15 @@ public class MotionController {
 
   private void updateDrive() {
     motionProfile.calculate();
-    yawError = calculateDriveError();
+    double yawVarianceError = calculateYawVarianceError();
     double currentDistance = drive.getDistance();
-    driveError = motionProfile.getCurrentPosition() - currentDistance;
+    driveDistanceError = motionProfile.getCurrentPosition() - currentDistance;
 
     // velocity with k_p term
     double setpointVelocity =
         motionProfile.getCurrentVelocity()
-            + (driveError + yawError * K_SCALE_YAW_CORRECTION) * K_P_DRIVE;
+            + (driveDistanceError) * K_P_DRIVE
+            + yawVarianceError * K_P_YAW_CORRECTION;
 
     double forward, strafe, yaw;
     synchronized (this) {
@@ -168,7 +165,7 @@ public class MotionController {
                 drive.getGyro().getAngle()));
   }
 
-  private int calculateDriveError() {
+  private int calculateYawVarianceError() {
     double currentAngle = drive.getGyro().getAngle();
     double angleDifference = Math.abs(previousAngle - currentAngle);
     int ticksToAdd = (int) angleDifference * drive.TICKS_PER_DEGREE;
@@ -196,6 +193,10 @@ public class MotionController {
   }
 
   public boolean isFinished() {
-    return motionProfile.isFinished() && yawController.onTarget();
+    if (motionProfile.isFinished() && yawController.onTarget()) {
+      logger.debug("motion controller finished");
+      return true;
+    }
+    return false;
   }
 }

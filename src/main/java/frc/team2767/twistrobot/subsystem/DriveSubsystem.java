@@ -148,7 +148,7 @@ public class DriveSubsystem extends Subsystem {
     driveConfig.slot0.integralZone = 3_000;
     driveConfig.slot0.allowableClosedloopError = 0;
     driveConfig.motionAcceleration = 10_000;
-    driveConfig.motionAcceleration = 800;
+    driveConfig.motionCruiseVelocity = 800;
     driveConfig.velocityMeasurementPeriod = VelocityMeasPeriod.Period_25Ms;
     driveConfig.velocityMeasurementWindow = 8;
 
