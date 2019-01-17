@@ -1,21 +1,20 @@
 package frc.team2767.twistrobot.motion;
 
+import static java.util.Collections.emptyList;
+
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PIDController;
 import frc.team2767.twistrobot.Robot;
 import frc.team2767.twistrobot.subsystem.DriveSubsystem;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.thirdcoast.swerve.SwerveDrive;
 import org.strykeforce.thirdcoast.trapper.Action;
 import org.strykeforce.thirdcoast.trapper.SessionKt;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.Collections.emptyList;
 
 public class MotionController {
   private static final int DT_MS = 20;
