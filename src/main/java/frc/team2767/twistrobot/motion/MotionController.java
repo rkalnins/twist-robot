@@ -1,20 +1,21 @@
 package frc.team2767.twistrobot.motion;
 
-import static java.util.Collections.emptyList;
-
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PIDController;
 import frc.team2767.twistrobot.Robot;
 import frc.team2767.twistrobot.subsystem.DriveSubsystem;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.thirdcoast.swerve.SwerveDrive;
 import org.strykeforce.thirdcoast.trapper.Action;
 import org.strykeforce.thirdcoast.trapper.SessionKt;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static java.util.Collections.emptyList;
 
 public class MotionController {
   private static final int DT_MS = 20;
@@ -22,7 +23,7 @@ public class MotionController {
   private static final int T2_MS = 100;
   private static final double V_PROG = 15_000 * 10; // ticks/sec
 
-  private static final double K_P_DRIVE = 1.2;
+  private static final double K_P_DRIVE = 1.6;
   private static final double K_SCALE_YAW_CORRECTION = 4.0;
   private static final double K_P_YAW = 0.01;
   private static final double K_D_YAW = 0.1;
