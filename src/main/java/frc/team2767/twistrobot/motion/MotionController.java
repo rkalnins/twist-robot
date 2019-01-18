@@ -20,7 +20,7 @@ public class MotionController {
   private static final int DT_MS = 20;
   private static final int T1_MS = 200;
   private static final int T2_MS = 100;
-  private static final double V_PROG = 15_000 * 10; // ticks/sec
+  private static final double V_PROG = 18_000 * 10; // ticks/sec
 
   private static final double K_P_DRIVE = 1.6;
   private static final double K_P_YAW_CORRECTION = 30.0;
@@ -30,7 +30,7 @@ public class MotionController {
   private static final double GOOD_ENOUGH = 5_500;
   private static final double ABS_TOL = 1.0;
   private static final DriveSubsystem drive = Robot.DRIVE;
-  private static final int AVERAGE_SMOOTH = 4;
+  private static final int AVERAGE_SMOOTH = 1;
   private static double driveDistanceError;
   private final double forwardComponent;
   private final double strafeComponent;
@@ -43,6 +43,7 @@ public class MotionController {
   private int yawErrorIterator;
   private double previousAngle;
   private Action action;
+  private boolean isDone;
 
   public MotionController(double direction, int distanceSetpoint, double yaw) {
     drive.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
@@ -52,6 +53,7 @@ public class MotionController {
     forwardComponent = Math.cos(Math.toRadians(direction)) / ticksPerSecMax;
     strafeComponent = Math.sin(Math.toRadians(direction)) / ticksPerSecMax;
     previousAngle = drive.getGyro().getAngle();
+    isDone = false;
 
     // yaw control
     yawController = new PIDController(K_P_YAW, 0, K_D_YAW, drive.getGyro(), this::updateYaw, 0.01);
@@ -65,6 +67,8 @@ public class MotionController {
     driveDistanceError = 0.0;
     yawErrorIterator = 0;
     yawErrorsMoving = new double[AVERAGE_SMOOTH];
+
+    logger.debug("distance error = {}", driveDistanceError);
 
     List<String> traceMeasures =
         List.of(
@@ -142,25 +146,28 @@ public class MotionController {
     synchronized (this) {
       forward = forwardComponent * setpointVelocity;
       strafe = strafeComponent * setpointVelocity;
-      yaw = 0.0;
+      yaw = this.yaw;
     }
-    drive.drive(forward, strafe, yaw);
+    if (!isDone) {
+      logger.debug("updating drive sp = {}", setpointVelocity);
+      drive.drive(forward, strafe, yaw);
 
-    action
-        .getTraceData()
-        .add(
-            List.of(
-                (double) (motionProfile.getIteration() * DT_MS), // millis
-                motionProfile.getCurrentAcceleration(), // profile_acc
-                motionProfile.getCurrentVelocity(), // profile_vel
-                setpointVelocity, // setpoint_vel
-                drive.getCurrentVelocity(), // actual_vel
-                motionProfile.getCurrentPosition(), // profile_ticks
-                currentDistance, // actual_ticks
-                forward, // forward
-                strafe, // strafe
-                yaw, // yaw
-                drive.getGyro().getAngle()));
+      action
+          .getTraceData()
+          .add(
+              List.of(
+                  (double) (motionProfile.getIteration() * DT_MS), // millis
+                  motionProfile.getCurrentAcceleration(), // profile_acc
+                  motionProfile.getCurrentVelocity(), // profile_vel
+                  setpointVelocity, // setpoint_vel
+                  drive.getCurrentVelocity(), // actual_vel
+                  motionProfile.getCurrentPosition(), // profile_ticks
+                  currentDistance, // actual_ticks
+                  forward, // forward
+                  strafe, // strafe
+                  yaw, // yaw
+                  drive.getGyro().getAngle()));
+    }
   }
 
   private int calculateYawVarianceError() {
@@ -168,15 +175,15 @@ public class MotionController {
     double angleDifference = Math.abs(previousAngle - currentAngle);
     int ticksToAdd = (int) angleDifference * drive.TICKS_PER_DEGREE;
 
-    yawErrorsMoving[yawErrorIterator % 4] = ticksToAdd;
-
-    previousAngle = drive.getGyro().getAngle();
-    double average = 0.0;
-
-    for (int i = 0; i < AVERAGE_SMOOTH; i++) {
-      average += yawErrorsMoving[i];
-    }
-    return (int) average / AVERAGE_SMOOTH;
+    //    yawErrorsMoving[yawErrorIterator % 4] = ticksToAdd;
+    //
+    //    previousAngle = drive.getGyro().getAngle();
+    //    double average = 0.0;
+    //
+    //    for (int i = 0; i < AVERAGE_SMOOTH; i++) {
+    //      average += yawErrorsMoving[i];
+    //    }
+    return ticksToAdd;
   }
 
   public void start() {
@@ -188,10 +195,12 @@ public class MotionController {
   }
 
   public void stop() {
+    isDone = true;
     logger.info("FINISH motion");
     drive.stop();
     notifier.stop();
     yawController.disable();
+    driveDistanceError = 0.0;
 
     action.getMeta().put("actual_ticks", drive.getDistance());
     action.getMeta().put("gyro_end", drive.getGyro().getAngle());
