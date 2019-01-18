@@ -24,12 +24,13 @@ public class MotionController {
 
   private static final double K_P_DRIVE = 1.6;
   private static final double K_P_YAW_CORRECTION = 30.0;
-  private static final double K_P_YAW = 0.01;
+  private static final double K_P_YAW = 0.015;
   private static final double K_D_YAW = 0.1;
   private static final double OUTPUT_RANGE = 0.5;
   private static final double GOOD_ENOUGH = 5_500;
   private static final double ABS_TOL = 1.0;
   private static final DriveSubsystem drive = Robot.DRIVE;
+  private static final int AVERAGE_SMOOTH = 4;
   private static double driveDistanceError;
   private final double forwardComponent;
   private final double strafeComponent;
@@ -38,6 +39,8 @@ public class MotionController {
   private final Notifier notifier;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private double yaw;
+  private double[] yawErrorsMoving;
+  private int yawErrorIterator;
   private double previousAngle;
   private Action action;
 
@@ -60,6 +63,8 @@ public class MotionController {
     notifier = new Notifier(this::updateDrive);
 
     driveDistanceError = 0.0;
+    yawErrorIterator = 0;
+    yawErrorsMoving = new double[AVERAGE_SMOOTH];
 
     List<String> traceMeasures =
         List.of(
@@ -115,9 +120,6 @@ public class MotionController {
             emptyList(),
             traceMeasures,
             traceData);
-
-    logger.debug("action created");
-    logger.debug("completed keeper action logger setup");
   }
 
   private synchronized void updateYaw(double yaw) {
@@ -140,7 +142,7 @@ public class MotionController {
     synchronized (this) {
       forward = forwardComponent * setpointVelocity;
       strafe = strafeComponent * setpointVelocity;
-      yaw = this.yaw;
+      yaw = 0.0;
     }
     drive.drive(forward, strafe, yaw);
 
@@ -152,11 +154,7 @@ public class MotionController {
                 motionProfile.getCurrentAcceleration(), // profile_acc
                 motionProfile.getCurrentVelocity(), // profile_vel
                 setpointVelocity, // setpoint_vel
-                (double)
-                    drive
-                        .getAllWheels()[0]
-                        .getDriveTalon()
-                        .getSelectedSensorVelocity(), // actual_vel
+                drive.getCurrentVelocity(), // actual_vel
                 motionProfile.getCurrentPosition(), // profile_ticks
                 currentDistance, // actual_ticks
                 forward, // forward
@@ -169,8 +167,16 @@ public class MotionController {
     double currentAngle = drive.getGyro().getAngle();
     double angleDifference = Math.abs(previousAngle - currentAngle);
     int ticksToAdd = (int) angleDifference * drive.TICKS_PER_DEGREE;
+
+    yawErrorsMoving[yawErrorIterator % 4] = ticksToAdd;
+
     previousAngle = drive.getGyro().getAngle();
-    return ticksToAdd;
+    double average = 0.0;
+
+    for (int i = 0; i < AVERAGE_SMOOTH; i++) {
+      average += yawErrorsMoving[i];
+    }
+    return (int) average / AVERAGE_SMOOTH;
   }
 
   public void start() {

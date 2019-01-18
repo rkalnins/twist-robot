@@ -118,6 +118,15 @@ public class DriveSubsystem extends Subsystem {
     motionController = null;
   }
 
+  public double getCurrentVelocity() {
+    double average = 0.0;
+
+    for (int i = 0; i < NUM_WHEELS; i++) {
+      average += Math.abs(getAllWheels()[i].getDriveTalon().getSelectedSensorVelocity());
+    }
+    return average / NUM_WHEELS;
+  }
+
   // Swerve configuration
 
   private SwerveDrive getSwerve() {

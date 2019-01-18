@@ -17,7 +17,7 @@ public class TwistCommand extends Command {
     this.distanceSetpoint = distance;
     this.heading = heading;
     this.yawSetpoint = endYaw;
-    setTimeout(10.0);
+    setTimeout(5.0);
     requires(drive);
   }
 
