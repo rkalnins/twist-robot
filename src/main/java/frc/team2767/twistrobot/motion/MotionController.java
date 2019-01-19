@@ -22,10 +22,10 @@ public class MotionController {
   private static final int T2_MS = 100;
   private static final double V_PROG = 18_000 * 10; // ticks/sec
 
-  private static final double K_P_DRIVE = 1.6;
-  private static final double K_P_YAW_CORRECTION = 30.0;
-  private static final double K_P_YAW = 0.015;
-  private static final double K_D_YAW = 0.1;
+  private static final double K_P_DRIVE = 0.9;
+  private static final double K_P_YAW_TICK = 30.0;
+  private static final double K_P_YAW = 0.015; // 0.015
+  private static final double K_D_YAW = 0.11; // 0.1
   private static final double OUTPUT_RANGE = 0.5;
   private static final double GOOD_ENOUGH = 5_500;
   private static final double ABS_TOL = 1.0;
@@ -39,11 +39,8 @@ public class MotionController {
   private final Notifier notifier;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private double yaw;
-  private double[] yawErrorsMoving;
-  private int yawErrorIterator;
   private double previousAngle;
   private Action action;
-  private boolean isDone;
 
   public MotionController(double direction, int distanceSetpoint, double yaw) {
     drive.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
@@ -53,7 +50,6 @@ public class MotionController {
     forwardComponent = Math.cos(Math.toRadians(direction)) / ticksPerSecMax;
     strafeComponent = Math.sin(Math.toRadians(direction)) / ticksPerSecMax;
     previousAngle = drive.getGyro().getAngle();
-    isDone = false;
 
     // yaw control
     yawController = new PIDController(K_P_YAW, 0, K_D_YAW, drive.getGyro(), this::updateYaw, 0.01);
@@ -65,8 +61,6 @@ public class MotionController {
     notifier = new Notifier(this::updateDrive);
 
     driveDistanceError = 0.0;
-    yawErrorIterator = 0;
-    yawErrorsMoving = new double[AVERAGE_SMOOTH];
 
     logger.debug("distance error = {}", driveDistanceError);
 
@@ -132,57 +126,58 @@ public class MotionController {
 
   private void updateDrive() {
     motionProfile.calculate();
-    double yawVarianceError = calculateYawVarianceError();
+    double yawTickAdjustment = calculateYawTickAdjustment();
     double currentDistance = drive.getDistance();
-    driveDistanceError = motionProfile.getCurrentPosition() - currentDistance;
+    //    driveDistanceError = motionProfile.getCurrentPosition() - K_P_YAW_TICK(currentDistance - ;
 
-    // velocity with k_p term
+    logger.debug(
+        "setpoint velocity = {} + ({} - ({} - {}) * {})",
+        motionProfile.getCurrentVelocity(),
+        motionProfile.getCurrentPosition(),
+        drive.getDistance(),
+        yawTickAdjustment,
+        K_P_DRIVE);
+
     double setpointVelocity =
-        motionProfile.getCurrentVelocity()
-            + (driveDistanceError) * K_P_DRIVE
-            + yawVarianceError * K_P_YAW_CORRECTION;
+        motionProfile.getCurrentVelocity() != 0.0
+            ? motionProfile.getCurrentVelocity()
+                + (motionProfile.getCurrentPosition()
+                    - (drive.getDistance() - yawTickAdjustment) * K_P_DRIVE)
+            : 0.0;
 
     double forward, strafe, yaw;
     synchronized (this) {
       forward = forwardComponent * setpointVelocity;
       strafe = strafeComponent * setpointVelocity;
       yaw = this.yaw;
+      logger.debug("f={} s={} y={}", forward, strafe, yaw);
     }
-    if (!isDone) {
-      logger.debug("updating drive sp = {}", setpointVelocity);
-      drive.drive(forward, strafe, yaw);
 
-      action
-          .getTraceData()
-          .add(
-              List.of(
-                  (double) (motionProfile.getIteration() * DT_MS), // millis
-                  motionProfile.getCurrentAcceleration(), // profile_acc
-                  motionProfile.getCurrentVelocity(), // profile_vel
-                  setpointVelocity, // setpoint_vel
-                  drive.getCurrentVelocity(), // actual_vel
-                  motionProfile.getCurrentPosition(), // profile_ticks
-                  currentDistance, // actual_ticks
-                  forward, // forward
-                  strafe, // strafe
-                  yaw, // yaw
-                  drive.getGyro().getAngle()));
-    }
+    drive.drive(forward, strafe, yaw);
+
+    action
+        .getTraceData()
+        .add(
+            List.of(
+                (double) (motionProfile.getIteration() * DT_MS), // millis
+                motionProfile.getCurrentAcceleration(), // profile_acc
+                motionProfile.getCurrentVelocity(), // profile_vel
+                setpointVelocity, // setpoint_vel
+                drive.getCurrentVelocity(), // actual_vel
+                motionProfile.getCurrentPosition(), // profile_ticks
+                currentDistance, // actual_ticks
+                forward, // forward
+                strafe, // strafe
+                yaw, // yaw
+                drive.getGyro().getAngle()));
   }
 
-  private int calculateYawVarianceError() {
+  private int calculateYawTickAdjustment() {
     double currentAngle = drive.getGyro().getAngle();
     double angleDifference = Math.abs(previousAngle - currentAngle);
-    int ticksToAdd = (int) angleDifference * drive.TICKS_PER_DEGREE;
+    int ticksToAdd = (int) (angleDifference * drive.TICKS_PER_DEGREE);
 
-    //    yawErrorsMoving[yawErrorIterator % 4] = ticksToAdd;
-    //
-    //    previousAngle = drive.getGyro().getAngle();
-    //    double average = 0.0;
-    //
-    //    for (int i = 0; i < AVERAGE_SMOOTH; i++) {
-    //      average += yawErrorsMoving[i];
-    //    }
+    //    logger.debug("rotation correction ticks = {}", ticksToAdd);
     return ticksToAdd;
   }
 
@@ -195,12 +190,10 @@ public class MotionController {
   }
 
   public void stop() {
-    isDone = true;
     logger.info("FINISH motion");
     drive.stop();
-    notifier.stop();
+    notifier.close();
     yawController.disable();
-    driveDistanceError = 0.0;
 
     action.getMeta().put("actual_ticks", drive.getDistance());
     action.getMeta().put("gyro_end", drive.getGyro().getAngle());

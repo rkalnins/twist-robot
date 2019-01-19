@@ -30,7 +30,7 @@ public class DriverControls {
     new JoystickButton(joystick, Button.RESET.id).whenPressed(new ZeroGyroCommand());
 
     new JoystickButton(joystick, Button.HAMBURGER.id)
-        .whenPressed(new TwistCommand(84_000, 0.0, 0.0));
+        .whenPressed(new TwistCommand(126_000, 0.0, 10.0));
     new JoystickButton(joystick, Button.X.id).whenPressed(new DistanceDriveCommand(245_760));
     new JoystickButton(joystick, Button.UP.id).whenPressed(log(Button.UP));
     new JoystickButton(joystick, Button.DOWN.id).whenPressed(log(Button.DOWN));

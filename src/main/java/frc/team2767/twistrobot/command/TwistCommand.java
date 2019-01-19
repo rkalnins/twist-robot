@@ -36,6 +36,10 @@ public class TwistCommand extends Command {
 
   @Override
   protected void end() {
+    logger.debug("stopping wheels");
+    drive.stop();
+    logger.debug("stopped wheels");
+    logger.debug("ending motion");
     drive.endMotion();
     logger.info("Twist command end distanceSetpoint = {}", drive.getDistance());
   }
