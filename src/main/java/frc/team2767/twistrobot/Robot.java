@@ -28,7 +28,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     logger.info("Today is {}", new Date());
     Session.INSTANCE.setBaseUrl("https://keeper.strykeforce.org");
-    DRIVE.zeroAzimuthEncoders();
+    DRIVE.zeroYawEncoders();
     TELEMETRY.start();
   }
 

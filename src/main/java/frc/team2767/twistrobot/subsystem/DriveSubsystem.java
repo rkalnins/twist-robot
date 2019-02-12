@@ -2,6 +2,8 @@ package frc.team2767.twistrobot.subsystem;
 
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.StatusFrame;
+import com.ctre.phoenix.motorcontrol.VelocityMeasPeriod;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
 import com.kauailabs.navx.frc.AHRS;
@@ -25,15 +27,23 @@ public class DriveSubsystem extends Subsystem {
   private static final double ROBOT_LENGTH = 21.5;
   private static final double ROBOT_WIDTH = 21.5;
   private static final int PID = 0;
-  public final int TICKS_PER_INCH = 4096;
+  public final int TICKS_PER_INCH = 2100;
+  public final int TICKS_PER_DEGREE;
   private final Wheel[] wheels;
   private final SwerveDrive swerve = getSwerve();
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private int[] start = new int[4];
-  private double distanceTarget;
   private MotionController motionController;
 
   public DriveSubsystem() {
+    TICKS_PER_DEGREE =
+        (int)
+            ((2
+                * Math.PI
+                * Math.sqrt(Math.pow(ROBOT_LENGTH / 2, 2) + Math.pow(ROBOT_WIDTH / 2, 2))
+                * TICKS_PER_INCH
+                / 360)); // WATCH: when center of rotation changes, this will be wrong
+    logger.debug("Ticks per degree: {}", TICKS_PER_DEGREE);
     logger.info("drive subsystem initialized");
     wheels = swerve.getWheels();
   }
@@ -43,7 +53,7 @@ public class DriveSubsystem extends Subsystem {
     setDefaultCommand(new TeleOpDriveCommand());
   }
 
-  public void zeroAzimuthEncoders() {
+  public void zeroYawEncoders() {
     swerve.zeroAzimuthEncoders();
   }
 
@@ -75,23 +85,13 @@ public class DriveSubsystem extends Subsystem {
     swerve.drive(forward, strafe, azimuth);
   }
 
-  public void setDistanceTarget(int distanceTarget) {
-
-    logger.debug("distance target = {}", distanceTarget);
-    this.distanceTarget = distanceTarget;
-  }
-
-  public boolean isDistanceTargetFinished() {
-    return getDistance() >= distanceTarget;
-  }
-
   public int getDistance() {
     double distance = 0;
     for (int i = 0; i < NUM_WHEELS; i++) {
       distance += Math.abs(wheels[i].getDriveTalon().getSelectedSensorPosition(PID) - start[i]);
     }
     distance /= 4;
-    logger.debug("distance = {}", (int) distance);
+    //    logger.debug("distance = {}", (int) distance);
     return (int) distance;
   }
 
@@ -118,6 +118,15 @@ public class DriveSubsystem extends Subsystem {
     motionController = null;
   }
 
+  public double getCurrentVelocity() {
+    double average = 0.0;
+
+    for (int i = 0; i < NUM_WHEELS; i++) {
+      average += Math.abs(getAllWheels()[i].getDriveTalon().getSelectedSensorVelocity());
+    }
+    return average / NUM_WHEELS;
+  }
+
   // Swerve configuration
 
   private SwerveDrive getSwerve() {
@@ -133,14 +142,14 @@ public class DriveSubsystem extends Subsystem {
   }
 
   private Wheel[] getWheels() {
-    TalonSRXConfiguration azimuthConfig = new TalonSRXConfiguration();
-    azimuthConfig.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;
+    TalonSRXConfiguration yawConfig = new TalonSRXConfiguration();
+    yawConfig.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;
 
     TalonSRXConfiguration driveConfig = new TalonSRXConfiguration();
     driveConfig.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;
     driveConfig.continuousCurrentLimit = 40;
-    driveConfig.peakCurrentDuration = 40;
-    driveConfig.peakCurrentLimit = 1;
+    driveConfig.peakCurrentDuration = 0;
+    driveConfig.peakCurrentLimit = 0;
     driveConfig.slot0.kP = 0.03;
     driveConfig.slot0.kI = 0.0003;
     driveConfig.slot0.kD = 0.0;
@@ -148,19 +157,21 @@ public class DriveSubsystem extends Subsystem {
     driveConfig.slot0.integralZone = 3_000;
     driveConfig.slot0.allowableClosedloopError = 0;
     driveConfig.motionAcceleration = 10_000;
-    driveConfig.motionAcceleration = 800;
+    driveConfig.motionCruiseVelocity = 800;
+    driveConfig.velocityMeasurementPeriod = VelocityMeasPeriod.Period_25Ms;
+    driveConfig.velocityMeasurementWindow = 8;
 
-    azimuthConfig.continuousCurrentLimit = 10;
-    azimuthConfig.peakCurrentDuration = 0;
-    azimuthConfig.peakCurrentLimit = 0;
-    azimuthConfig.slot0.kP = 10.0;
-    azimuthConfig.slot0.kI = 0.0;
-    azimuthConfig.slot0.kD = 100.0;
-    azimuthConfig.slot0.kF = 0.0;
-    azimuthConfig.slot0.integralZone = 0;
-    azimuthConfig.slot0.allowableClosedloopError = 0;
-    azimuthConfig.motionAcceleration = 10_000;
-    azimuthConfig.motionCruiseVelocity = 800;
+    yawConfig.continuousCurrentLimit = 10;
+    yawConfig.peakCurrentDuration = 0;
+    yawConfig.peakCurrentLimit = 0;
+    yawConfig.slot0.kP = 10.0;
+    yawConfig.slot0.kI = 0.0;
+    yawConfig.slot0.kD = 100.0;
+    yawConfig.slot0.kF = 0.0;
+    yawConfig.slot0.integralZone = 0;
+    yawConfig.slot0.allowableClosedloopError = 0;
+    yawConfig.motionAcceleration = 10_000;
+    yawConfig.motionCruiseVelocity = 800;
 
     TelemetryService telemetryService = Robot.TELEMETRY;
     telemetryService.stop();
@@ -169,9 +180,10 @@ public class DriveSubsystem extends Subsystem {
 
     for (int i = 0; i < 4; i++) {
       TalonSRX azimuthTalon = new TalonSRX(i);
-      azimuthTalon.configAllSettings(azimuthConfig);
+      azimuthTalon.configAllSettings(yawConfig);
 
       TalonSRX driveTalon = new TalonSRX(i + 10);
+      driveTalon.setStatusFramePeriod(StatusFrame.Status_13_Base_PIDF0, 5);
       driveTalon.configAllSettings(driveConfig);
       driveTalon.setNeutralMode(NeutralMode.Brake);
 

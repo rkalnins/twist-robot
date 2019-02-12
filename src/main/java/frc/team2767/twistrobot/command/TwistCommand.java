@@ -7,36 +7,41 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TwistCommand extends Command {
-  private double distanceSetpoint;
+  private static final DriveSubsystem DRIVE = Robot.DRIVE;
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+  private int distanceSetpoint;
   private double heading;
   private double yawSetpoint;
 
-  private static final DriveSubsystem drive = Robot.DRIVE;
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  public TwistCommand(double distance, double heading, double endYaw) {
+  public TwistCommand(int distance, double heading, double endYaw) {
     this.distanceSetpoint = distance;
     this.heading = heading;
     this.yawSetpoint = endYaw;
-    requires(drive);
+    setTimeout(5.0);
+    requires(DRIVE);
   }
 
   @Override
   protected void initialize() {
-    drive.resetGyroYaw();
-    drive.zeroGyro();
-    drive.resetDistance();
-    drive.motionTo(0.0, (int) distanceSetpoint, 0.0);
+    DRIVE.resetGyroYaw();
+    DRIVE.zeroGyro();
+    DRIVE.resetDistance();
+    DRIVE.motionTo(heading, distanceSetpoint, yawSetpoint);
   }
 
   @Override
   protected boolean isFinished() {
-    return drive.isMotionFinished() || isTimedOut();
+    return DRIVE.isMotionFinished() || isTimedOut();
   }
 
   @Override
   protected void end() {
-    drive.endMotion();
-    logger.info("MotionDrive distanceSetpoint = {}", drive.getDistance());
+    logger.debug("stopping wheels");
+    DRIVE.stop();
+    logger.debug("stopped wheels");
+    logger.debug("ending motion");
+    DRIVE.endMotion();
+    logger.info("Twist command end distanceSetpoint = {}", DRIVE.getDistance());
   }
 }

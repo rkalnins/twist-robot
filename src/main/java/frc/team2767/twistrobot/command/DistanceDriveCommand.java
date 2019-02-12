@@ -8,32 +8,32 @@ import org.slf4j.LoggerFactory;
 
 public class DistanceDriveCommand extends Command {
 
-  private static final DriveSubsystem drive = Robot.DRIVE;
+  private static final DriveSubsystem DRIVE = Robot.DRIVE;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final int distanceSetpoint;
 
   public DistanceDriveCommand(int distanceSetpoint) {
     this.distanceSetpoint = distanceSetpoint;
     setTimeout(12.0);
-    requires(drive);
+    requires(DRIVE);
   }
 
   @Override
   protected void initialize() {
-    drive.resetGyroYaw();
-    drive.zeroGyro();
-    drive.resetDistance();
-    drive.motionTo(0.0, distanceSetpoint, 0.0);
+    DRIVE.resetGyroYaw();
+    DRIVE.zeroGyro();
+    DRIVE.resetDistance();
+    DRIVE.motionTo(0.0, distanceSetpoint, 0.0);
   }
 
   @Override
   protected boolean isFinished() {
-    return drive.isMotionFinished() || isTimedOut();
+    return DRIVE.isMotionFinished() || isTimedOut();
   }
 
   @Override
   protected void end() {
-    drive.endMotion();
-    logger.info("MotionDrive distance = {}", drive.getDistance());
+    DRIVE.endMotion();
+    logger.info("MotionDrive distance = {}", DRIVE.getDistance());
   }
 }

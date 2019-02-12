@@ -9,7 +9,7 @@ import org.strykeforce.thirdcoast.swerve.SwerveDrive;
 
 public class TimedDriveCommand extends TimedCommand {
 
-  private static final DriveSubsystem drive = Robot.DRIVE;
+  private static final DriveSubsystem DRIVE = Robot.DRIVE;
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -22,14 +22,14 @@ public class TimedDriveCommand extends TimedCommand {
     this.forward = forward;
     this.strafe = strafe;
     this.yaw = azimuth;
-    requires(drive);
+    requires(DRIVE);
   }
 
   @Override
   protected void initialize() {
-    drive.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
-    logger.debug("timed drive init");
-    drive.drive(forward, strafe, yaw);
+    DRIVE.setDriveMode(SwerveDrive.DriveMode.CLOSED_LOOP);
+    logger.debug("timed DRIVE init");
+    DRIVE.drive(forward, strafe, yaw);
     logger.debug("forward = {}, strafe = {}, azimuth = {}", forward, strafe, yaw);
   }
 

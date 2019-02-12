@@ -12,28 +12,28 @@ import org.slf4j.LoggerFactory;
 public final class TeleOpDriveCommand extends Command {
 
   private static final double DEADBAND = 0.05;
-  private static final DriveSubsystem drive = Robot.DRIVE;
-  private static final DriverControls controls = Robot.CONTROLS.getDriverControls();
+  private static final DriveSubsystem DRIVE = Robot.DRIVE;
+  private static final DriverControls CONTROLS = Robot.CONTROLS.getDriverControls();
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public TeleOpDriveCommand() {
-    requires(drive);
+    requires(DRIVE);
   }
 
   @Override
   protected void initialize() {
-    drive.setDriveMode(TELEOP);
+    DRIVE.setDriveMode(TELEOP);
   }
 
   @Override
   protected void execute() {
 
-    double forward = deadband(controls.getForward());
-    double strafe = deadband(controls.getStrafe());
-    double yaw = deadband(controls.getYaw());
+    double forward = deadband(CONTROLS.getForward());
+    double strafe = deadband(CONTROLS.getStrafe());
+    double yaw = deadband(CONTROLS.getYaw());
     //    double yaw = 0.0; // not used
 
-    drive.drive(forward, strafe, yaw);
+    DRIVE.drive(forward, strafe, yaw);
   }
 
   @Override
@@ -43,7 +43,7 @@ public final class TeleOpDriveCommand extends Command {
 
   @Override
   protected void end() {
-    drive.drive(0.0, 0.0, 0.0);
+    DRIVE.stop();
   }
 
   private double deadband(double value) {
