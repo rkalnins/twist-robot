@@ -7,8 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TwistCommand extends Command {
-  private static final DriveSubsystem drive = Robot.DRIVE;
+  private static final DriveSubsystem DRIVE = Robot.DRIVE;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
   private int distanceSetpoint;
   private double heading;
   private double yawSetpoint;
@@ -18,29 +19,29 @@ public class TwistCommand extends Command {
     this.heading = heading;
     this.yawSetpoint = endYaw;
     setTimeout(5.0);
-    requires(drive);
+    requires(DRIVE);
   }
 
   @Override
   protected void initialize() {
-    drive.resetGyroYaw();
-    drive.zeroGyro();
-    drive.resetDistance();
-    drive.motionTo(heading, distanceSetpoint, yawSetpoint);
+    DRIVE.resetGyroYaw();
+    DRIVE.zeroGyro();
+    DRIVE.resetDistance();
+    DRIVE.motionTo(heading, distanceSetpoint, yawSetpoint);
   }
 
   @Override
   protected boolean isFinished() {
-    return drive.isMotionFinished() || isTimedOut();
+    return DRIVE.isMotionFinished() || isTimedOut();
   }
 
   @Override
   protected void end() {
     logger.debug("stopping wheels");
-    drive.stop();
+    DRIVE.stop();
     logger.debug("stopped wheels");
     logger.debug("ending motion");
-    drive.endMotion();
-    logger.info("Twist command end distanceSetpoint = {}", drive.getDistance());
+    DRIVE.endMotion();
+    logger.info("Twist command end distanceSetpoint = {}", DRIVE.getDistance());
   }
 }
